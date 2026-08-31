@@ -1,5 +1,6 @@
 ﻿using MathNet.Numerics.Distributions;
 using MathNet.Numerics.Integration;
+using System.Net.NetworkInformation;
 using System.Runtime.Intrinsics.Arm;
 
 namespace PipeRoughnessCalculation
@@ -10,8 +11,6 @@ namespace PipeRoughnessCalculation
         static double L = 0;
         static double rho = 0;
         static double viscosity = 0;
-        static double Pin = 0;
-        static double Pin_atm = 0;
         static double confidenceLevel = 0;
         static double mean_F = 0;
         static double mean_dP = 0;
@@ -24,9 +23,9 @@ namespace PipeRoughnessCalculation
             rho = GetNumericInput("Введите плотность вещества (кг/м3)", true, 0);
             viscosity = GetNumericInput("Введите вязкость вещества (сПз)", true,0);
             viscosity *= 0.001;
-            Pin = GetNumericInput("Введите входное давление (атм)", true,0);
+            /*Pin = GetNumericInput("Введите входное давление (атм)", true,0);
             Pin_atm = Pin;
-            Pin *= 101325.0;
+            Pin *= 101325.0;*/
 
             int N_expected = 0;
             while (N_expected <= 0)
@@ -53,15 +52,17 @@ namespace PipeRoughnessCalculation
             {
                 Console.WriteLine("==================================================");
                 Console.WriteLine("Измерение "+(i+1));
+                double Pin = GetNumericInput("Введите входное давление (атм)", true);
                 double Pout = GetNumericInput("Введите выходное давление (атм)", true);
+                Pin *= 101325.0;
                 Pout *= 101325.0;
                 double F = GetNumericInput("Введите поток через трубу (кг/с)", true);
-                if (ignoreNegativeInput && (Pout <= 0 || F <= 0))
+                if (ignoreNegativeInput && (Pin <= 0  || Pout <= 0 || F <= 0))
                 {
                     Console.WriteLine("Измерение с невалидными значениями потока или давления проигнорировано");
                     continue;
                 }
-                double _roughness = SingleMeasurementRoughnessCalculation(Pout, F);
+                double _roughness = SingleMeasurementRoughnessCalculation(Pin, Pout, F);
                 if (ignoreNonValidRoughness && (_roughness < 0 || _roughness > 1))
                 {
                     Console.WriteLine("Невалидная относительная шероховатость ("+ _roughness+ ") проигнорирована");
@@ -222,7 +223,7 @@ namespace PipeRoughnessCalculation
 
             return value;
         }
-        static double SingleMeasurementRoughnessCalculation(double Pout, double F)
+        static double SingleMeasurementRoughnessCalculation(double Pin, double Pout, double F)
         {
             double dP = Pin - Pout;
             double lambda = (Math.PI * Math.PI / 8.0) * (D * D * D * D * D) * dP * rho / (L * F * F);
