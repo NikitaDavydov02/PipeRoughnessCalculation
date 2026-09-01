@@ -33,7 +33,10 @@ namespace PipeRoughnessCalculation
         static double mean_F = 0;
         static double mean_dP = 0;
         static double mean_roughness = 0;
+        //static double mean_lambda = 0;
+        //static double mean_Re = 0;
         static int N = 0;
+        static double precision;
 
         static bool ignoreNegativeInput;
         static bool ignoreNonValidRoughness;
@@ -158,6 +161,9 @@ namespace PipeRoughnessCalculation
                                 confidenceLevel= GetNumericInput(reader.GetDouble(1), true, 0,100.0);
                                 confidenceLevel *= 0.01;
                                 break;
+                            case "precision":
+                                precision = GetNumericInput(reader.GetDouble(1), true, 0);
+                                break;
                             case "Ignore negative input":
                                 ignoreNegativeInput = GetBooleanInput(reader.GetString(1));
                                 break;
@@ -235,7 +241,6 @@ namespace PipeRoughnessCalculation
             else
                 throw new Exception();
         }
-        // static double GetNumericInput(string prompt, bool strictInequality, double ? min=null,double? max = null)
         static double GetNumericInput(double value, bool strictInequality, double? min = null, double? max = null)
         {
             bool isValid = true;
@@ -292,7 +297,7 @@ namespace PipeRoughnessCalculation
         }
         static void CalculateSystematicError(out double theta, out double S_theta )
         {
-            double mean_lambda = (Math.PI * Math.PI / 8.0) * (D * D * D * D * D) * mean_dP * rho / (L * mean_F * mean_F);
+            double mean_lambda = 0;
             mean_lambda /= 0.11;
             double mean_Re = (4.0 / Math.PI) * mean_F / (D * viscosity);
             //<ADDING UP ERRORS>
@@ -325,8 +330,8 @@ namespace PipeRoughnessCalculation
             double S_theta = 0;
 
             CalculateRandomError(out epsilon, out S_x);
-            if (calculateSystematicError)
-                CalculateSystematicError(out theta, out S_theta);
+            //if (calculateSystematicError)
+            //    CalculateSystematicError(out theta, out S_theta);
             if (S_x + S_theta > 0)
             {
                 double K = (epsilon + theta) / (S_x + S_theta);
@@ -348,7 +353,7 @@ namespace PipeRoughnessCalculation
 
             lambdaExpression.Parameters["F"] = F;
             lambdaExpression.Parameters["Re"] = Re;
-            double roughness = SolveEquationOnLambda(LambdaOnRoughnessFunc, lambda, 0.001);
+            double roughness = SolveEquationOnLambda(LambdaOnRoughnessFunc, lambda, precision);
             return roughness;
         }
         static double LambdaOnRoughnessFunc(double roughness)
